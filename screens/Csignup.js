@@ -286,7 +286,8 @@
 // });
 
 //gmni
-import React, { useState } from "react"; // Added useState import
+// screens/Csignup.js
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -294,96 +295,94 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  Platform,
-  ActivityIndicator, // Import for loading state
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-// import { Picker } from "@react-native-picker/picker"; // Not used in this version
-import axios from "axios"; // Import axios
+import axios from "axios";
 
 export default function CollectorSignUp({ navigation }) {
-  const [fullName, setFullName] = React.useState("");
-  const [username, setUsername] = React.useState(""); // NEW: Added username state
-  const [email, setEmail] = React.useState("");
-  const [phone, setPhone] = React.useState("");
-  const [location, setLocation] = React.useState(""); // Note: 'location' is not stored in Collector model on backend
-  const [center, setScrapCenter] = React.useState(""); // This will be sent as 'centerUsername'
-  const [password, setPassword] = React.useState("");
-  const [confirmPassword, setConfirmPassword] = React.useState("");
-  const [isPasswordVisible, setPasswordVisible] = React.useState(false);
-  const [isConfirmVisible, setConfirmVisible] = React.useState(false);
-  const [loading, setLoading] = React.useState(false); // NEW: Loading state
+  const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [location, setLocation] = useState("");
+  const [center, setScrapCenter] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isPasswordVisible, setPasswordVisible] = useState(false);
+  const [isConfirmVisible, setConfirmVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const isStrongPassword = (pwd) =>
+  const isStrongPassword = pwd =>
     pwd.length >= 8 &&
     /[A-Z]/.test(pwd) &&
     /[a-z]/.test(pwd) &&
     /[0-9]/.test(pwd) &&
     /[!@#\$%^&\*]/.test(pwd);
 
-  const isValidEmail = (email) =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isValidEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+  const isValidPhone = p => /^\d{10}$/.test(p);
 
-  const isValidPhone = (phone) =>
-    /^\d{10}$/.test(phone);
-
-  const onRegister = async () => { // Made async for axios call
-    if (!fullName || !username || !email || !phone || !center || !password || !confirmPassword) { // Removed !role, added !username
+  const onRegister = async () => {
+    if (
+      !fullName ||
+      !username ||
+      !email ||
+      !phone ||
+      !center ||
+      !password ||
+      !confirmPassword
+    ) {
       Alert.alert("Error", "All fields are required.");
       return;
     }
-
-    // Frontend validation checks
     if (!isValidEmail(email)) {
       Alert.alert("Invalid Email", "Please enter a valid email address.");
       return;
     }
-
     if (!isValidPhone(phone)) {
       Alert.alert("Invalid Phone Number", "Phone number must be exactly 10 digits.");
       return;
     }
-
     if (password !== confirmPassword) {
       Alert.alert("Error", "Passwords do not match.");
       return;
     }
-
     if (!isStrongPassword(password)) {
       Alert.alert(
         "Weak Password",
-        "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character."
+        "Must be at least 8 chars with upper, lower, number & special."
       );
       return;
     }
 
-    setLoading(true); // Set loading to true
-
+    setLoading(true);
     try {
-      const response = await axios.post(
-        "http://192.168.137.246:5000/api/v1/collector/signup/", // Correct endpoint for collector signup
+      const { data } = await axios.post(
+        "https://scrapconnect.loca.lt/api/v1/collector/signup/",
         {
-          fullName: fullName,
-          username: username.trim().toLowerCase(), // Send username as lowercase
-          email: email.trim().toLowerCase(), // Send email as lowercase
+          fullName,
+          username: username.trim().toLowerCase(),
+          email: email.trim().toLowerCase(),
           phoneNo: phone,
-          password: password,
-          centerUsername: center.trim(), // Map 'center' state to 'centerUsername' expected by backend
+          password,
+          centerUsername: center.trim(),
         },
         {
-            withCredentials: true, // If your backend needs to set cookies
+          headers: {
+            "Bypass-Tunnel-Reminder": "1", // Important for localtunnel
+            "Content-Type": "application/json"
+          }
         }
       );
-
-      Alert.alert("Success", response.data.message || "Collector registered successfully!");
-      navigation.navigate("CLogin"); // Navigate to collector login after successful registration
-    } catch (error) {
-      console.error("Collector Signup Error:", error);
-      const message =
-        error.response?.data?.message || "Something went wrong during registration.";
-      Alert.alert("Registration Failed", message);
+      Alert.alert("Success", data.message || "Registered successfully!");
+      navigation.navigate("Clogin");
+    } catch (err) {
+      console.error("Collector Signup Error:", err);
+      const msg = err.response?.data?.message || err.message || "Registration failed.";
+      Alert.alert("Registration Failed", msg);
     } finally {
-      setLoading(false); // Set loading to false
+      setLoading(false);
     }
   };
 
@@ -393,60 +392,45 @@ export default function CollectorSignUp({ navigation }) {
         <Text style={styles.heading}>SCRAP CONNECT</Text>
         <Text style={styles.welcome}>Create a new account</Text>
 
-        <TextInput
-          placeholder="Full Name"
-          placeholderTextColor="#ccc"
-          style={styles.input}
-          value={fullName}
-          onChangeText={setFullName}
-        />
+        {/* Fields */}
+        {[
+          { label: "Full Name", value: fullName, setter: setFullName },
+          { label: "Username", value: username, setter: setUsername, props: { autoCapitalize: "none" } },
+          {
+            label: "Email",
+            value: email,
+            setter: setEmail,
+            props: { keyboardType: "email-address", autoCapitalize: "none" },
+          },
+          {
+            label: "Phone Number",
+            value: phone,
+            setter: setPhone,
+            props: { keyboardType: "number-pad", maxLength: 10 },
+          },
+          {
+            label: "Location",
+            value: location,
+            setter: setLocation,
+          },
+          {
+            label: "Scrap Center Username",
+            value: center,
+            setter: setScrapCenter,
+          },
+        ].map(({ label, value, setter, props }, i) => (
+          <TextInput
+            key={i}
+            placeholder={label}
+            placeholderTextColor="#ccc"
+            style={styles.input}
+            value={value}
+            onChangeText={setter}
+            {...props}
+          />
+        ))}
 
-        <TextInput
-          placeholder="Username" // NEW: Username input field
-          placeholderTextColor="#ccc"
-          style={styles.input}
-          autoCapitalize="none"
-          value={username}
-          onChangeText={setUsername}
-        />
-
-        <TextInput
-          placeholder="Email"
-          placeholderTextColor="#ccc"
-          style={styles.input}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={email}
-          onChangeText={setEmail}
-        />
-
-        <TextInput
-          placeholder="Phone Number"
-          placeholderTextColor="#ccc"
-          style={styles.input}
-          keyboardType="number-pad"
-          maxLength={10}
-          value={phone}
-          onChangeText={setPhone}
-        />
-
-        {/* Note: 'location' is not stored in the Collector model. You might remove this if not needed for backend logic. */}
-        <TextInput
-          placeholder="Location"
-          placeholderTextColor="#ccc"
-          style={styles.input}
-          value={location}
-          onChangeText={setLocation}
-        />
-
-        <TextInput
-          placeholder="Scrap Center Username" // Clarified placeholder for backend expectation
-          placeholderTextColor="#ccc"
-          style={styles.input}
-          value={center} // This maps to centerUsername on backend
-          onChangeText={setScrapCenter}
-        />
-
+        {/* Password */}
         <View style={styles.passwordContainer}>
           <TextInput
             placeholder="Password"
@@ -457,8 +441,8 @@ export default function CollectorSignUp({ navigation }) {
             onChangeText={setPassword}
           />
           <TouchableOpacity
-            onPress={() => setPasswordVisible(!isPasswordVisible)}
             style={styles.eyeIcon}
+            onPress={() => setPasswordVisible(v => !v)}
           >
             <Ionicons
               name={isPasswordVisible ? "eye-off" : "eye"}
@@ -467,7 +451,6 @@ export default function CollectorSignUp({ navigation }) {
             />
           </TouchableOpacity>
         </View>
-
         <View style={styles.passwordContainer}>
           <TextInput
             placeholder="Confirm Password"
@@ -478,8 +461,8 @@ export default function CollectorSignUp({ navigation }) {
             onChangeText={setConfirmPassword}
           />
           <TouchableOpacity
-            onPress={() => setConfirmVisible(!isConfirmVisible)}
             style={styles.eyeIcon}
+            onPress={() => setConfirmVisible(v => !v)}
           >
             <Ionicons
               name={isConfirmVisible ? "eye-off" : "eye"}
@@ -489,16 +472,21 @@ export default function CollectorSignUp({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.signInButton} onPress={onRegister} disabled={loading}>
+        {/* Submit */}
+        <TouchableOpacity
+          style={styles.signInButton}
+          onPress={onRegister}
+          disabled={loading}
+        >
           {loading ? (
-            <ActivityIndicator color={WHITE} />
+            <ActivityIndicator color="#fff" />
           ) : (
             <Text style={styles.signInButtonText}>Register</Text>
           )}
         </TouchableOpacity>
 
         <View style={styles.linksContainer}>
-          <TouchableOpacity onPress={() => navigation.navigate("CLogin")}>
+          <TouchableOpacity onPress={() => navigation.navigate("Clogin")}>
             <Text style={styles.linkText}>Already have an account?</Text>
           </TouchableOpacity>
         </View>
@@ -512,12 +500,7 @@ const GREEN = "#3CB371";
 const WHITE = "#FFFFFF";
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: DARK_GREEN,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  container: { flex: 1, backgroundColor: DARK_GREEN, justifyContent: "center", alignItems: "center" },
   loginBox: {
     width: "85%",
     backgroundColor: "#013220",
@@ -526,19 +509,8 @@ const styles = StyleSheet.create({
     borderColor: GREEN,
     padding: 25,
   },
-  heading: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: WHITE,
-    textAlign: "center",
-  },
-  welcome: {
-    fontSize: 18,
-    fontStyle: "italic",
-    color: WHITE,
-    textAlign: "center",
-    marginVertical: 15,
-  },
+  heading: { fontSize: 28, fontWeight: "bold", color: WHITE, textAlign: "center" },
+  welcome: { fontSize: 18, fontStyle: "italic", color: WHITE, textAlign: "center", marginVertical: 15 },
   input: {
     backgroundColor: "#014d33",
     color: WHITE,
@@ -548,10 +520,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 15,
   },
-  passwordContainer: {
-    position: "relative",
-    marginBottom: 15,
-  },
+  passwordContainer: { position: "relative", marginBottom: 15 },
   passwordInput: {
     backgroundColor: "#014d33",
     color: WHITE,
@@ -561,33 +530,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingRight: 45,
   },
-  eyeIcon: {
-    position: "absolute",
-    right: 15,
-    top: 12,
-  },
-  signInButton: {
-    backgroundColor: GREEN,
-    borderRadius: 6,
-    paddingVertical: 15,
-    alignItems: "center",
-    marginTop: 5,
-  },
-  signInButtonText: {
-    color: WHITE,
-    fontWeight: "600",
-    fontSize: 18,
-  },
-  linksContainer: {
-    marginTop: 20,
-    alignItems: "center",
-  },
-  linkText: {
-    color: WHITE,
-    textDecorationLine: "underline",
-    fontSize: 16,
-  },
+  eyeIcon: { position: "absolute", right: 15, top: 12 },
+  signInButton: { backgroundColor: GREEN, borderRadius: 6, paddingVertical: 15, alignItems: "center", marginTop: 5 },
+  signInButtonText: { color: WHITE, fontWeight: "600", fontSize: 18 },
+  linksContainer: { marginTop: 20, alignItems: "center" },
+  linkText: { color: WHITE, textDecorationLine: "underline", fontSize: 16 },
 });
+
 
 //gpt
 // import React, { useState } from "react";

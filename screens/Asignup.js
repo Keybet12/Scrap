@@ -540,7 +540,7 @@ export default function AdminSignUp({ navigation }) {
 
     try {
       const response = await axios.post(
-        "http://192.168.137.246:5000/api/v1/center/signup/", // Correct API endpoint for Center Signup
+        "https://scrapconnect.loca.lt/api/v1/center/signup/", // Correct API endpoint for Center Signup
         {
           centerName: centerName.trim(), // Map fullName to centerName
           centerUsername: centerUsername.trim().toLowerCase(), // Map new state to centerUsername
@@ -548,6 +548,12 @@ export default function AdminSignUp({ navigation }) {
           phoneNo: parseInt(phone, 10), // Convert phone to number
           location: location.trim().toLowerCase(),
           password: password,
+        },
+         {
+          headers: {
+            "Bypass-Tunnel-Reminder": "1", // Important for localtunnel
+            "Content-Type": "application/json"
+          }
         },
         {
           withCredentials: true, // Important if your backend sets cookies

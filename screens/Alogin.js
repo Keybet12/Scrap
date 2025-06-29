@@ -600,10 +600,16 @@ export default function AdminLogin({ navigation }) {
 
         try {
             const response = await axios.post(
-                "http://192.168.137.246:5000/api/v1/center/signin/",
+                "https://scrapconnect.loca.lt/api/v1/center/signin/",
                 {
                     centerUsername: centerName.trim().toLowerCase(),
                     password,
+                },
+                {
+                    headers: {
+                        "Bypass-Tunnel-Reminder": "1", // Important for localtunnel
+                        "Content-Type": "application/json"
+                    }
                 },
                 {
                     withCredentials: true,

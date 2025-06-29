@@ -351,10 +351,16 @@ export default function Login({ navigation }) {
   const handleLogin = async () => {
     try {
       const response = await axios.post(
-        "http://192.168.137.246:5000/api/v1/user/signin/",
+        "https://scrapconnect.loca.lt/api/v1/user/signin/",
         {
           username: fullName.trim().toLowerCase(), // assuming fullName is used as username
           password,
+        },
+        {
+          headers: {
+            "Bypass-Tunnel-Reminder": "1", // Important for localtunnel
+            "Content-Type": "application/json"
+          }
         },
         {
           withCredentials: true,

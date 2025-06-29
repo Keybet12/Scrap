@@ -945,14 +945,19 @@ export default function CollectorLogin({ navigation }) {
     try {
       // Corrected endpoint for collector signin
       const response = await axios.post(
-        "http://192.168.0.114:5000/api/v1/collector/signin", // Your backend endpoint
+        "https://scrapconnect.loca.lt/api/v1/collector/signin",
         {
-          // FIX 2: Send 'username' in the request body, mapping from the 'fullName' state
-          username: fullName.trim().toLowerCase(), // The backend expects 'username'
+          username: fullName.trim().toLowerCase(),
           password,
+        },
+        {
+          headers: {
+            "Bypass-Tunnel-Reminder": "1",
+            "Content-Type": "application/json",
+          },
         }
-        
       );
+
 
       const { token, collectorInfo } = response.data; // Backend sends 'collectorInfo'
       const collectorId = collectorInfo._id; // Get _id from collectorInfo
