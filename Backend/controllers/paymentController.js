@@ -1,35 +1,36 @@
 require("dotenv").config();
 const AfricasTalking = require("africastalking");
 const Payment = require("../models/paymentModel");
-// if you do have a Request model file, make sure the filename matches exactly, e.g.:
-// const Request = require("../models/requestModel");
+// const Request = require("../models/requestModel"); // uncomment if you enforce ownership
 
 const at = AfricasTalking({
   username: process.env.AT_USERNAME,
-  apiKey:   process.env.AT_API_KEY,
+  apiKey: process.env.AT_API_KEY,
 });
 
-// rename to payHomeowner so it matches your routes.js import
 async function payHomeowner(req, res) {
   try {
-    const { requestId, homeownerId, amount, phoneNumber, collectorId } = req.body;
-    // if you want to enforce collector ownership, re-add your Request find here
+    const { requestId, homeownerId, amount, phoneNumber } = req.body;
+    // Better: get collectorId from auth middleware (e.g. req.user.collectorId)
+    const collectorId = req.user?.collectorId || req.body.collectorId;
+
+    // Optional ownership check:
     // const request = await Request.findById(requestId);
     // if (!request || request.collectorId.toString() !== collectorId) {
     //   return res.status(403).json({ message: "Unauthorized or invalid request" });
     // }
 
+    // Send airtime via Africa's Talking
     const result = await at.AIRTIME.send({
-      recipients: [
-        {
-          phoneNumber,
-          currencyCode: "KES",
-          amount: amount.toString(),
-        },
-      ],
+      recipients: [{
+        phoneNumber,
+        currencyCode: "KES",
+        amount: amount.toString(),
+      }],
     });
     const airtimeResponse = result.responses[0];
 
+    // Save record
     const payment = new Payment({
       requestId,
       collectorId,
@@ -41,14 +42,14 @@ async function payHomeowner(req, res) {
     });
     await payment.save();
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Payment recorded and airtime sent",
       payment,
       airtime: airtimeResponse,
     });
   } catch (error) {
     console.error("Payment error:", error);
-    res.status(500).json({ message: "Payment failed", error: error.message });
+    return res.status(500).json({ message: "Payment failed", error: error.message });
   }
 }
 
