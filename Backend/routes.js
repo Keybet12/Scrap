@@ -162,7 +162,7 @@ router.post("/payment/send", payHomeowner);
 
 /** Scrap request routes **/
 router.post("/requests/:userId/create", createRequest);
-router.post("/request/assign", assignCollectorToRequest);
+router.post("/requests/assign", assignCollectorToRequest);
 router.post("/requests/:requestId/update", updateRequestStatus);
 router.get("/requests/user/:userId/list", getAllUserRequests);
 router.get("/requests/user/:userId/approved", getUserApprovedRequests);
