@@ -1,3 +1,5 @@
+// screens/CollectorPayment.js
+
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -11,22 +13,26 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import FakeSTKModal from '../components/FakeSTKModal';
 
 export default function CollectorPayment() {
   const [approvedRequests, setApprovedRequests] = useState([]);
-  const [inputs, setInputs] = useState({}); // Holds phone & amount for each request
+  const [inputs, setInputs] = useState({});       // Holds phone & amount for each request
+  const [stk, setStk] = useState({               // Controls fake STK modal
+    visible: false,
+    request: null
+  });
 
+  // Fetch collector’s assigned requests
   useEffect(() => {
     const fetchRequests = async () => {
       try {
         const token = await AsyncStorage.getItem('token');
-        const collectorId = await AsyncStorage.getItem('collectorId'); // use collectorId key
+        const collectorId = await AsyncStorage.getItem('collectorId');
 
         const res = await axios.get(
-          `http://10.71.125.67:5000/api/v1/collector/requests/${collectorId}`, 
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
+          `http://10.71.125.67:5000/api/v1/collector/requests/${collectorId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
 
         setApprovedRequests(res.data.requests);
@@ -39,6 +45,7 @@ export default function CollectorPayment() {
     fetchRequests();
   }, []);
 
+  // Track input changes
   const handleInputChange = (field, value, id) => {
     setInputs(prev => ({
       ...prev,
@@ -49,7 +56,8 @@ export default function CollectorPayment() {
     }));
   };
 
-  const handlePay = async request => {
+  // Real payment call to backend
+  const handlePay = async (request) => {
     const data = inputs[request._id];
     if (!data || !data.phone || !data.amount) {
       return Alert.alert('Missing Fields', 'Enter phone and amount to pay.');
@@ -77,13 +85,30 @@ export default function CollectorPayment() {
     }
   };
 
-  const handleDownloadReceipt = requestId => {
-    Alert.alert('Receipt Download', `Trigger download for receipt of request ${requestId}`);
-    // Implement receipt download via FileSystem or Sharing API
+  // Show fake STK prompt
+  const openStk = (request) => {
+    setStk({ visible: true, request });
   };
 
+  // Close modal
+  const onStkClose = () => {
+    setStk({ visible: false, request: null });
+  };
+
+  // User confirmed PIN → perform payment
+  const onStkSuccess = () => {
+    if (stk.request) handlePay(stk.request);
+  };
+
+  // Receipt placeholder
+  const handleDownloadReceipt = (requestId) => {
+    Alert.alert('Receipt Download', `Trigger download for receipt of request ${requestId}`);
+  };
+
+  // List render
   const renderItem = ({ item }) => {
     const data = inputs[item._id] || {};
+
     return (
       <View style={styles.row}>
         <Text style={styles.cell}>{item.homeownerName}</Text>
@@ -109,7 +134,7 @@ export default function CollectorPayment() {
           keyboardType="numeric"
         />
 
-        <TouchableOpacity style={styles.payButton} onPress={() => handlePay(item)}>
+        <TouchableOpacity style={styles.payButton} onPress={() => openStk(item)}>
           <Text style={styles.buttonText}>Pay</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.receiptButton} onPress={() => handleDownloadReceipt(item._id)}>
@@ -120,33 +145,36 @@ export default function CollectorPayment() {
   };
 
   return (
-    <ScrollView horizontal>
-      <View style={styles.container}>
-        <View style={[styles.row, styles.headerRow]}>
-          <Text style={styles.header}>Homeowner</Text>
-          <Text style={styles.header}>Homeowner ID</Text>
-          <Text style={styles.header}>Request ID</Text>
-          <Text style={styles.header}>Scrap Type</Text>
-          <Text style={styles.header}>Weight</Text>
-          <Text style={styles.header}>Phone</Text>
-          <Text style={styles.header}>Amount</Text>
-          <Text style={styles.header}>Pay</Text>
-          <Text style={styles.header}>Receipt</Text>
-        </View>
+    <>
+      <FakeSTKModal
+        visible={stk.visible}
+        amount={ inputs[stk.request?._id]?.amount || '' }
+        phoneNumber={ inputs[stk.request?._id]?.phone || '' }
+        onClose={onStkClose}
+        onSuccess={onStkSuccess}
+      />
 
-        <FlatList
-          data={approvedRequests}
-          keyExtractor={item => item._id}
-          renderItem={renderItem}
-        />
-      </View>
-    </ScrollView>
+      <ScrollView horizontal>
+        <View style={styles.container}>
+          <View style={[styles.row, styles.headerRow]}>
+            {['Homeowner','Homeowner ID','Request ID','Scrap Type','Weight','Phone','Amount','Pay','Receipt']
+              .map(h => <Text key={h} style={styles.header}>{h}</Text>)}
+          </View>
+
+          <FlatList
+            data={approvedRequests}
+            keyExtractor={item => item._id}
+            renderItem={renderItem}
+          />
+        </View>
+      </ScrollView>
+    </>
   );
 }
 
 const DARK_GREEN = '#003920';
-const GREEN = '#00C851';
-const WHITE = '#FFFFFF';
+const GREEN      = '#00C851';
+const WHITE      = '#FFFFFF';
 
 const styles = StyleSheet.create({
   container: {
