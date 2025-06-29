@@ -4,7 +4,8 @@
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "tunnel": "lt --port 5000 --subdomain scrapconnect"
   },
   "author": "",
   "license": "ISC",
@@ -20,6 +21,7 @@
     "nodemailer": "^7.0.3"
   },
   "devDependencies": {
+    "localtunnel": "^2.0.2",
     "nodemon": "^3.1.10"
   }
 }
