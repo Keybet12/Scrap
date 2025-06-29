@@ -13,7 +13,12 @@ const app=express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:8081", "http://192.168.0.114:8081"],
+    credentials: true,
+  })
+);
 app.use('/api/v1',router);
 // app.use('/api/v1/payments', paymentRoutes);
 // app.use('/api/v1/requests', requestRoutes);
@@ -48,9 +53,10 @@ mongoose.connection.on("disconnected",()=>{
 });
 
 //run server
-const server=app.listen(PORT,()=>{
-    console.log(`Server is running on port ${PORT}`);
+const server = app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server is running on http://0.0.0.0:${PORT}`);
 });
+
 
 server.on("error",(err)=>{
     console.log("Server error",err.message)
