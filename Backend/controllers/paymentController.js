@@ -1,20 +1,21 @@
 require("dotenv").config();
 const AfricasTalking = require("africastalking");
 const Payment = require("../models/paymentModel");
-// const Request = require("../models/requestModel"); // uncomment if you enforce ownership
+// const Request = require("../models/requestModel"); // uncomment to enforce ownership checks
 
 const at = AfricasTalking({
   username: process.env.AT_USERNAME,
   apiKey: process.env.AT_API_KEY,
 });
 
+// 1️⃣ Process a payment: send airtime & record it
 async function payHomeowner(req, res) {
   try {
     const { requestId, homeownerId, amount, phoneNumber } = req.body;
-    // Better: get collectorId from auth middleware (e.g. req.user.collectorId)
+    // Ideally, collectorId comes from auth middleware:
     const collectorId = req.user?.collectorId || req.body.collectorId;
 
-    // Optional ownership check:
+    // Optional: enforce that this collector owns the request
     // const request = await Request.findById(requestId);
     // if (!request || request.collectorId.toString() !== collectorId) {
     //   return res.status(403).json({ message: "Unauthorized or invalid request" });
@@ -30,7 +31,7 @@ async function payHomeowner(req, res) {
     });
     const airtimeResponse = result.responses[0];
 
-    // Save record
+    // Persist payment record
     const payment = new Payment({
       requestId,
       collectorId,
@@ -53,4 +54,38 @@ async function payHomeowner(req, res) {
   }
 }
 
-module.exports = { payHomeowner };
+// 2️⃣ List payments by collector
+async function getPaymentsByCollector(req, res) {
+  try {
+    const { collectorId } = req.params;
+    const payments = await Payment.find({ collectorId })
+      .sort({ paidAt: -1 })
+      .populate('requestId', 'scrapType weight')
+      .populate('homeownerId', 'fullName');
+    return res.json({ payments });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Could not fetch payments", error: error.message });
+  }
+}
+
+// 3️⃣ List payments received by homeowner
+async function getPaymentsByHomeowner(req, res) {
+  try {
+    const { homeownerId } = req.params;
+    const payments = await Payment.find({ homeownerId })
+      .sort({ paidAt: -1 })
+      .populate('requestId', 'scrapType weight')
+      .populate('collectorId', 'fullName');
+    return res.json({ payments });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Could not fetch payments", error: error.message });
+  }
+}
+
+module.exports = {
+  payHomeowner,
+  getPaymentsByCollector,
+  getPaymentsByHomeowner,
+};
