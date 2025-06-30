@@ -31,7 +31,7 @@ export default function CollectorPayment() {
         const collectorId = await AsyncStorage.getItem('collectorId');
 
         const res = await axios.get(
-          `http://10.71.125.67:5000/api/v1/collector/requests/${collectorId}`,
+          `http://192.168.0.114:5000/api/v1/collector/requests/${collectorId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -66,7 +66,7 @@ export default function CollectorPayment() {
     try {
       const token = await AsyncStorage.getItem('token');
       await axios.post(
-        'http://10.71.125.67:5000/api/v1/payment/send',
+        'http://192.168.0.114:5000/api/v1/payment/send',
         {
           requestId: request._id,
           homeownerId: request.homeownerId,
@@ -98,6 +98,7 @@ export default function CollectorPayment() {
   // User confirmed PIN → perform payment
   const onStkSuccess = () => {
     if (stk.request) handlePay(stk.request);
+    onStkClose();
   };
 
   // Receipt placeholder
@@ -148,8 +149,8 @@ export default function CollectorPayment() {
     <>
       <FakeSTKModal
         visible={stk.visible}
-        amount={ inputs[stk.request?._id]?.amount || '' }
-        phoneNumber={ inputs[stk.request?._id]?.phone || '' }
+        amount={inputs[stk.request?._id]?.amount || ''}
+        phoneNumber={inputs[stk.request?._id]?.phone || ''}
         onClose={onStkClose}
         onSuccess={onStkSuccess}
       />
